@@ -2,9 +2,8 @@ import * as cdk from '@aws-cdk/core';
 import * as ec2 from '@aws-cdk/aws-ec2';
 import * as lb from '@aws-cdk/aws-elasticloadbalancingv2';
 import * as ecs from '@aws-cdk/aws-ecs'
-import * as ecsPatterns from '@aws-cdk/aws-ecs-patterns';
 import * as ecr from '@aws-cdk/aws-ecr';
-
+import { ServiceStack } from './microservice-arch';
 export class EcsTutorialInfraStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -27,30 +26,12 @@ export class EcsTutorialInfraStack extends cdk.Stack {
       vpc: vpc
     })
 
-    const tutorialRepository = new ecr.Repository(this, 'Repository');
+    const orderRepo = new ecr.Repository(this, 'Repository');
 
-    const orderTask = new ecs.TaskDefinition(this, 'OrderTask', {
-      compatibility: ecs.Compatibility.FARGATE,
-      cpu: '256',
-      memoryMiB: '512'
-    })
-
-    const orderContainer = orderTask.addContainer('OrderContainer', {
-      image: ecs.ContainerImage.fromEcrRepository(tutorialRepository)
-    })
-
-    orderContainer.addPortMappings({
-      containerPort: 8000
-    })
-
-    const orderService = new ecsPatterns.ApplicationLoadBalancedFargateService(
-        this,
-        'OrderService', {
+    const orderService = new ServiceStack(this, 'OrderService', {
       cluster: cluster,
-      taskDefinition: orderTask,
-      loadBalancer: alb,
-      assignPublicIp: true
+      alb: alb,
+      repo: orderRepo
     })
-
   }
 }
