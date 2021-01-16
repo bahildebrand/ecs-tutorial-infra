@@ -19,14 +19,15 @@ export class EcsTutorialInfraStack extends cdk.Stack {
     })
 
     const alb = new lb.ApplicationLoadBalancer(this, 'ALB', {
-      vpc: vpc
+      vpc: vpc,
+      internetFacing: true
     })
 
     const cluster = new ecs.Cluster(this, 'Cluster', {
       vpc: vpc
     })
 
-    const orderRepo = new ecr.Repository(this, 'Repository');
+    const orderRepo = new ecr.Repository(this, 'OrderRepository');
 
     const orderService = new ServiceStack(this, 'OrderService', {
       cluster: cluster,

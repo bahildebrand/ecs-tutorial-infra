@@ -14,28 +14,28 @@ export class ServiceStack extends Construct {
   constructor(scope: Construct, id: string, props: ServiceStackProps) {
     super(scope, id);
 
-    const orderTask = new ecs.TaskDefinition(this, 'OrderTask', {
+    const task = new ecs.TaskDefinition(this, id + 'Task', {
         compatibility: ecs.Compatibility.FARGATE,
         cpu: '256',
         memoryMiB: '512'
       })
 
-      const orderContainer = orderTask.addContainer('OrderContainer', {
-        image: ecs.ContainerImage.fromEcrRepository(props.repo)
-      })
+    const container = task.addContainer( id + 'Container', {
+      image: ecs.ContainerImage.fromEcrRepository(props.repo)
+    })
 
-      orderContainer.addPortMappings({
-        containerPort: 8000
-      })
+    container.addPortMappings({
+      containerPort: 8000
+    })
 
-      const orderService = new ecsPatterns.ApplicationLoadBalancedFargateService(
-          this,
-          'OrderService', {
-        cluster: props.cluster,
-        taskDefinition: orderTask,
-        loadBalancer: props.alb,
-        assignPublicIp: true
-      })
-    }
+    const service = new ecsPatterns.ApplicationLoadBalancedFargateService(
+        this,
+        id, {
+      cluster: props.cluster,
+      taskDefinition: task,
+      loadBalancer: props.alb,
+      assignPublicIp: true
+    })
+  }
 }
 
