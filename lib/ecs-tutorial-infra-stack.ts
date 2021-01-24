@@ -4,6 +4,7 @@ import * as lb from '@aws-cdk/aws-elasticloadbalancingv2';
 import * as ecs from '@aws-cdk/aws-ecs'
 import * as ecr from '@aws-cdk/aws-ecr';
 import { ServiceStack } from './microservice-arch';
+import { ListenerAction } from '@aws-cdk/aws-elasticloadbalancingv2';
 export class EcsTutorialInfraStack extends cdk.Stack {
   constructor(scope: cdk.Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
@@ -23,16 +24,44 @@ export class EcsTutorialInfraStack extends cdk.Stack {
       internetFacing: true
     })
 
+    const listener = new lb.ApplicationListener(this, "Listener", {
+      loadBalancer: alb,
+      port: 80,
+      defaultAction: ListenerAction.fixedResponse(404)
+    });
+
     const cluster = new ecs.Cluster(this, 'Cluster', {
       vpc: vpc
     })
 
-    const orderRepo = new ecr.Repository(this, 'OrderRepository');
+    let priority = 10;
+
+    // const orderRepo = new ecr.Repository(this, 'OrderRepository');
+    const orderRepo = ecr.Repository.fromRepositoryName(this, "OrderRepo",
+      "order-repo");
 
     const orderService = new ServiceStack(this, 'OrderService', {
       cluster: cluster,
       alb: alb,
-      repo: orderRepo
-    })
+      repo: orderRepo,
+      vpc: vpc,
+      uri: '/order/*',
+      listener: listener,
+      priority: priority++
+    });
+
+    const inventoryRepo = ecr.Repository.fromRepositoryName(this,
+      "InventoryRepo",
+      "inventory-repo");
+
+    const inventoryService = new ServiceStack(this, 'InventoryService', {
+      cluster: cluster,
+      alb: alb,
+      repo: inventoryRepo,
+      vpc: vpc,
+      uri: '/inventory/*',
+      listener: listener,
+      priority: priority++
+    });
   }
 }
