@@ -3,8 +3,7 @@ import * as ec2 from '@aws-cdk/aws-ec2'
 import * as ecs from '@aws-cdk/aws-ecs'
 import * as lb from '@aws-cdk/aws-elasticloadbalancingv2';
 import * as ecr from '@aws-cdk/aws-ecr';
-import { ListenerAction } from "@aws-cdk/aws-elasticloadbalancingv2";
-import { RepositoryImage } from "@aws-cdk/aws-ecs";
+import * as sd from "@aws-cdk/aws-servicediscovery";
 
 export interface ServiceStackProps {
   cluster: ecs.ICluster;
@@ -13,7 +12,7 @@ export interface ServiceStackProps {
   vpc: ec2.Vpc;
   uri: string;
   listener: lb.ApplicationListener;
-  priority: number
+  priority: number;
 }
 
 export class ServiceStack extends Construct {

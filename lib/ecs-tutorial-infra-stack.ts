@@ -3,6 +3,7 @@ import * as ec2 from '@aws-cdk/aws-ec2';
 import * as lb from '@aws-cdk/aws-elasticloadbalancingv2';
 import * as ecs from '@aws-cdk/aws-ecs'
 import * as ecr from '@aws-cdk/aws-ecr';
+import * as sd from "@aws-cdk/aws-servicediscovery";
 import { ServiceStack } from './microservice-arch';
 import { ListenerAction } from '@aws-cdk/aws-elasticloadbalancingv2';
 export class EcsTutorialInfraStack extends cdk.Stack {
@@ -19,10 +20,22 @@ export class EcsTutorialInfraStack extends cdk.Stack {
       ]
     })
 
+    const namespace = new sd.PrivateDnsNamespace(this, "Namespace", {
+      name: "hello-world",
+      vpc: vpc
+    });
+
+    const service = namespace.createService('Service', {
+      dnsRecordType: sd.DnsRecordType.A_AAAA,
+      dnsTtl: cdk.Duration.seconds(30),
+      loadBalancer: true,
+      name: 'hello-world'
+    });
+
     const alb = new lb.ApplicationLoadBalancer(this, 'ALB', {
       vpc: vpc,
       internetFacing: true
-    })
+    });
 
     const listener = new lb.ApplicationListener(this, "Listener", {
       loadBalancer: alb,
@@ -30,36 +43,39 @@ export class EcsTutorialInfraStack extends cdk.Stack {
       defaultAction: ListenerAction.fixedResponse(404)
     });
 
+
+    service.registerLoadBalancer('Loadbalancer', alb);
+
     const cluster = new ecs.Cluster(this, 'Cluster', {
       vpc: vpc
     })
 
     let priority = 10;
-
     // const orderRepo = new ecr.Repository(this, 'OrderRepository');
-    const orderRepo = ecr.Repository.fromRepositoryName(this, "OrderRepo",
-      "order-repo");
+    const helloRepo = ecr.Repository.fromRepositoryName(this, "HelloRepo",
+      "hello-service");
 
-    const orderService = new ServiceStack(this, 'OrderService', {
+    const helloService = new ServiceStack(this, 'HelloService', {
       cluster: cluster,
       alb: alb,
-      repo: orderRepo,
+      repo: helloRepo,
       vpc: vpc,
-      uri: '/order/*',
+      uri: '/hello/*',
       listener: listener,
       priority: priority++
     });
 
-    const inventoryRepo = ecr.Repository.fromRepositoryName(this,
-      "InventoryRepo",
-      "inventory-repo");
+    const worldRepo = ecr.Repository.fromRepositoryName(this,
+      "WorldRepo",
+      "world-service");
 
-    const inventoryService = new ServiceStack(this, 'InventoryService', {
+    const worldServiceName = 'WorldService';
+    const worldService = new ServiceStack(this, worldServiceName, {
       cluster: cluster,
       alb: alb,
-      repo: inventoryRepo,
+      repo: worldRepo,
       vpc: vpc,
-      uri: '/inventory/*',
+      uri: '/world/*',
       listener: listener,
       priority: priority++
     });
